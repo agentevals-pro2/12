@@ -1299,8 +1299,15 @@ class BaseQueryBuilder:
             if is_tag or is_context or name in self.config.non_nullable_keys:
                 return Condition(lhs, Op(search_filter.operator), value)
             else:
-                # If not a tag, we can just check that the column is null.
-                return Condition(Function("isNull", [lhs]), Op(search_filter.operator), 1)
+                # Treat empty string queries as existence checks for attributes
+                # that may be null. Align this behaviour with tags by comparing
+                # against an empty string after wrapping the column with
+                # `ifNull` to normalize nulls to empty strings.
+                return Condition(
+                    Function("ifNull", [lhs, ""]),
+                    Op(search_filter.operator),
+                    value,
+                )
 
         is_null_condition = None
         # TODO(wmak): Skip this for all non-nullable keys not just event.type
