@@ -443,9 +443,28 @@ def test_profile_id_column_has(params, column):
 
     assert (
         Condition(
-            Function("isNull", [Column("profile_id")]),
+            Function("ifNull", [Column("profile_id"), ""]),
             Op.NEQ,
-            1,
+            "",
+        )
+        in builder.where
+    )
+
+
+@django_db_all
+def test_missing_tag_filter(params):
+    builder = SpansIndexedQueryBuilder(
+        Dataset.SpansIndexed,
+        params,
+        query="!has:foo",
+        selected_columns=["count"],
+    )
+
+    assert (
+        Condition(
+            Function("ifNull", [Column("tags[foo]"), ""]),
+            Op.EQ,
+            "",
         )
         in builder.where
     )
